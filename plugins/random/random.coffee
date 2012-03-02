@@ -14,7 +14,7 @@ exports.random = ->
 
     @respond "Syntax: #{prefix}random [throws] [sides]"
   else if throws is ''
-    throws = 1
+    throws = '1'
   else if throws > 100000
     @respond 'Seriously, why you need so many throws?'
     return
