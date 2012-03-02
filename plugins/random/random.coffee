@@ -22,7 +22,6 @@ exports.random = ->
   result = 0
   for [1..throws]
     result += Math.floor Math.random() * sides + 1
-  s = if sides is '1' then '' else 's'
-  ss = if throws is '1' then '' else 's'
-  @respond "You have thrown #{sides}-side#{s} dice #{throws} time#{ss}. " +
-          "You have got #{result} after summing results."
+  s = if throws is '1' then '' else 's'
+  @respond "You have thrown a #{sides}-sided dice #{throws} time#{s}. " +
+           "After summing up everything we get #{result}."
