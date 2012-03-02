@@ -4,6 +4,7 @@ Plugins = [
   'factoids'
   'eval'
   'math'
+  'random'
 ]
 
 # Servers configuration
