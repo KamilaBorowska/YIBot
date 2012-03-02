@@ -1,0 +1,4 @@
+# Bot configuration
+config.coffee
+# JSON files
+*.json

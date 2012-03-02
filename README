@@ -1,0 +1,8 @@
+WARNING: This is technical preview. Any API may change without warning!
+_____________________________________________________________________________
+ Y   Y   III   BBBB    OOO   TTTTT  YIBot is modular bot. While currently it
+ Y   Y    I    B   B  O   O    T    can only connect to IRC, future versions
+  Y Y     I    BBBB   O   O    T    will probably add support for other kind
+   Y      I    B   B  O   O    T    of servers, like XMPP.
+   Y      I    B   B  O   O    T
+   Y     III   BBBB    OOO     T    https://github.com/GlitchMr/YIBot
