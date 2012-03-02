@@ -96,6 +96,8 @@ class exports.IRC extends Server
 
     @log data
 
+    @response = {}
+
     # Some servers seem to insert ":" at beginning for some reason. This
     # function will fix those cases.
     data = data.replace(/^:/, '')
@@ -184,14 +186,28 @@ class exports.IRC extends Server
     # In case of setTimeout attack (not really)
     @message = {}
 
+    for channelName, channel of @response
+      if channel.length > 7
+        @pastebin channel, channelName, 'send'
+      else
+        for response in channel
+          [text, me] = response
+          if me
+            text = "\x01ACTION #{text}\x01"
+          else
+            text = "\x02\x02#{text}"
+          @raw "PRIVMSG #{channelName} :#{text}"
+
   respond: (msg, me = false) =>
-    if @message.channel?
+    if @message.channel?[0] is '#'
       @send msg, @message.channel, me
+    else if @message.channel?
+      @send msg, @message.nick, me
     else
       throw new Error 'You cannot respond to this message.'
 
   # This is rather tricky version of send, needed because of IRC specifics.
-  send: (message, channel, me = false) =>
+  send: (message, channel, me) =>
     if message instanceof Array
       for msg in message
         @send msg, channel
@@ -203,13 +219,18 @@ class exports.IRC extends Server
         line = msg.match(/.{1,400}(\s|$)|.{400}|.+$/g)
         for text in line
           continue if text is ''
-          if me
-            text = "\x01ACTION #{text}\x01"
+          if @message.channel?
+            @response[channel] ?= []
+            @response[channel].push [text, me]
           else
-            text = "\x02\x02#{text}"
-          @raw "PRIVMSG #{channel} :#{text}"
+            if me
+              message = "\x01ACTION #{text}\x01"
+            else
+              message = "\x02\x02#{text}"
+            @raw "PRIVMSG #{channel} :#{text}"
     # This true will return "true" which in plugin will stop execution.
     true
 
   # In case of IRC, it's alias, but it's not always the case.
-  pm: (message, channel, me = false) => @send message, channel, me
+  pm: (message, channel, me = false) =>
+    @send message, channel, me

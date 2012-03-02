@@ -154,4 +154,12 @@ class Server
       else
         throw new Error 'Unknown command!'
 
+  # Parses through pastebin module in order to load shortened version of text
+  pastebin: (text, channel, context) =>
+    try
+      pastebin = require './plugins/pastebin/pastebin'
+      pastebin._pastebin.apply this, arguments
+    catch e
+      @[context] 'Too long response.', channel
+
 exports.Server = Server
