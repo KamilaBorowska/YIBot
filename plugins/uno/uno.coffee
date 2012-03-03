@@ -16,12 +16,20 @@ shuffle = (obj) ->
   shuffled
 
 # Now for actual code. Look, I haven't included Underscore. I don't want to
-# make dependency hell, you know :P.
+# make dependency hell.
+
+# Assignment is done to deal with scoping issues in CoffeeScript.
+channel = undefined
+uno = undefined
+exports._init = (config) ->
+  channel = config?.channel
+  # This won't be used. Really. It's just so Uno game will know channel.
+  uno = new unoPlay
 
 class unoPlay
   constructor: (@this) ->
     # Settings
-    @channel = '#uno'
+    @channel = channel
     # Various stuff
     @running = no
     # Deck
@@ -218,8 +226,6 @@ class unoPlay
         @this.message.value = 'R'
       exports.color.apply @this
 
-# This won't be used. Really. It's just placeholder.
-uno = new unoPlay
 timeout = undefined
 
 exports.uno = ->

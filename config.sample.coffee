@@ -1,10 +1,10 @@
 # List of plugins
 Plugins = [
+  # Normal plugin
   'eightball'
-  'factoids'
-  'eval'
-  'math'
-  'random'
+  # Plugin with settings (it has ":" character at end)
+  'uno':
+    channel: '#uno'
 ]
 
 # Servers configuration
@@ -25,7 +25,7 @@ exports.globals =
     Plugins: Plugins
     Owner: /^glitchmr@.*[.]adsl[.]inetia[.]pl$/
     ReactOnInvite: 'Invited by %s.'
-    # May be RegExp too if you remember to start it with ^!
+    # May be RegExp too if you remember to start it with ^ character!
     Prefix: '@'
   Shell:
     Plugins: Plugins

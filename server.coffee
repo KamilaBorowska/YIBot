@@ -55,13 +55,21 @@ class Server
     @storage = {}
     @commands = []
 
-    # Run init function if it exists in plugin
-    for plugin in @config.Plugins
-      plugin = require("./plugins/#{plugin}/#{plugin}")
-      plugin._init?.apply this
+    loadPlugin = (pluginName, config) =>
+      plugin = require("./plugins/#{pluginName}/#{pluginName}")
+      plugin._init?.apply this, [config]
       for property of plugin
         if /^[^_$]/.test(property)
           @addCommands property
+      pluginName
+
+    # Run init function if it exists in plugin
+    @config.Plugins = for plugin in @config.Plugins
+      if typeof plugin is 'object'
+        for name, config of plugin
+          loadPlugin name, config
+      else
+        loadPlugin plugin
 
   # When ran, server is expected to try connecting and starting reading data.
   connect: ->
