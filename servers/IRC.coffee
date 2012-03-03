@@ -51,7 +51,7 @@ class exports.IRC extends Server
     @raw "NICK #{@config.Nick}"
     @raw "USER #{@config.User} place holder :#{@config.Realname}"
 
-    @nick = @config.Nick
+    @currentNick = @config.Nick
 
   join: (channel) =>
     # Channels are case insensitive. This is attempt to fix this.
@@ -59,7 +59,7 @@ class exports.IRC extends Server
 
     if @channels[channel]?
       throw new Error 'Bot has tried to join channel which already exists.'
-    @channels[channel] = [@nick]
+    @channels[channel] = [@currentNick]
     @raw "JOIN #{channel}"
     true
 
@@ -75,7 +75,7 @@ class exports.IRC extends Server
       throw new Error "#{channel} already is left."
 
   nick: (nick) ->
-    [@oldnick, @nick] = [@nick, nick]
+    [@oldnick, @currentNick] = [@currentNick, nick]
     @raw "NICK #{nick}"
     true
 
@@ -138,7 +138,7 @@ class exports.IRC extends Server
           @join channel
       # Nickname in use or unknown nick
       when '432', '433'
-        @nick = @oldnick
+        @currentNick = @oldnick
       # List of users in this channel
       when '353'
         channel = data[4].toLowerCase()
@@ -148,7 +148,7 @@ class exports.IRC extends Server
         for nick in nicks
           nick = nick.replace(/^[^A-}]+/, '')
           # Ignore my bot name
-          continue if nick is @nick
+          continue if nick is @currentNick
           # Remove modes at beginning. Those characters aren't allowed in
           # IRC nicknames anyway, so there is no danger in removing those.
           @channels[channel].push(nick)
@@ -157,7 +157,7 @@ class exports.IRC extends Server
         @message.channel = data[2].toLowerCase()
         remove @channels[@message.channel], @message.nick
       when 'join'
-        break if @message.nick is @nick
+        break if @message.nick is @currentNick
         @message.channel = data[2].toLowerCase()
         @channels[@message.channel].push(@message.nick)
       when 'quit'

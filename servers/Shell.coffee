@@ -6,6 +6,8 @@ repl = require('repl')
 
 class exports.Shell extends Server
   connect: ->
+    @currentNick = 'Bot'
+
     process.stderr.write "[#{@name}] <<< "
 
     process.stdin.resume()
@@ -17,6 +19,8 @@ class exports.Shell extends Server
       @message.type = 'private'
       # You can expect that everybody who has access to shell is owner
       @message.owner = true
+      # Your nick
+      @message.nick = 'You'
 
       # When variables are initialized, give control to plugins
       @parseMessage()
@@ -40,4 +44,4 @@ class exports.Shell extends Server
 
   join: -> throw new Error 'You cannot join while using shell pseudo-protocol.'
   part: -> throw new Error 'You cannot part while using shell pseudo-protocol.'
-  nick: -> throw new Error 'You cannot part while using shell pseudo-protocol.'
+  nick: -> throw new Error 'You cannot change nick while using shell pseudo-protocol.'

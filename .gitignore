@@ -2,3 +2,5 @@
 config.coffee
 # JSON files
 *.json
+# Compiled JS files
+*.js
