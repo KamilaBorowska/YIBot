@@ -21,7 +21,7 @@ shuffle = (obj) ->
 class unoPlay
   constructor: (@this) ->
     # Settings
-    @channel = '#botplace'
+    @channel = '#uno'
     # Various stuff
     @running = no
     # Deck
