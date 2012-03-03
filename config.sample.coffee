@@ -22,6 +22,7 @@ exports.globals =
     Port: 6667
     Nick: 'YIBotClone'
     User: 'yibot'
+    Realname: 'My real name'
     Plugins: Plugins
     Owner: /^glitchmr@.*[.]adsl[.]inetia[.]pl$/
     ReactOnInvite: 'Invited by %s.'
