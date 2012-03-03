@@ -2,7 +2,7 @@ exports.coin = ->
   @respond if Math.floor Math.random() * 2 then 'heads' else 'tails'
 
 exports.random = ->
-  match = /^(\d*?)[d ]?(\d+)$/.exec @message.value
+  match = /^\s*(\d*?)[d ]?(\d+)\s*$/.exec @message.value
   if match?
     [match, throws, sides] = match
 
@@ -13,6 +13,8 @@ exports.random = ->
       prefix = "#{@config.Prefix}"
 
     @respond "Syntax: #{prefix}random [throws] [sides]"
+    return
+    
   else if throws is ''
     throws = '1'
   else if throws > 100000
