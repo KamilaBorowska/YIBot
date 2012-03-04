@@ -49,7 +49,7 @@ class exports.IRC extends Server
 
     @client.setEncoding('utf8')
     @raw "NICK #{@config.Nick}"
-    @raw "USER #{@config.User} place holder :#{@config.Realname}"
+    @raw "USER #{@config.User} 0 * :#{@config.Realname}"
 
     @currentNick = @config.Nick
 
