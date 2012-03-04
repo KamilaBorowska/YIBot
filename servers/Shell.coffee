@@ -8,7 +8,7 @@ class exports.Shell extends Server
   connect: ->
     @currentNick = 'Bot'
 
-    process.stderr.write "[#{@name}] <<< "
+    process.stderr.write "[#{@serverName}] <<< "
 
     process.stdin.resume()
     process.stdin.setEncoding 'utf8'
@@ -28,7 +28,7 @@ class exports.Shell extends Server
 
       @message = {}
 
-      process.stderr.write "[#{@name}] <<< "
+      process.stderr.write "[#{@serverName}] <<< "
 
     process.stdin.on 'error', ->
 
@@ -39,7 +39,7 @@ class exports.Shell extends Server
 
   log: (message, pm) =>
     status = if pm then '***' else '>>>'
-    process.stderr.write "[#{@name}] #{status} "
+    process.stderr.write "[#{@serverName}] #{status} "
     console.log message
 
   join: -> throw new Error 'You cannot join while using shell pseudo-protocol.'
