@@ -11,7 +11,7 @@ remove = (value) ->
 # Class IRC itself
 class exports.IRC extends Server
 
-  constructor: (@name, @config) ->
+  constructor: (@serverName, @config) ->
     if @config.Host?
       # Usual IRC port
       @config.Port ?= 6667
@@ -20,7 +20,7 @@ class exports.IRC extends Server
       # constructor which makes various initialization.
       super
     else
-      throw new Error "Server #{@name} doesn't have specified server!"
+      throw new Error "Server #{@serverName} doesn't have specified server!"
 
   # Sends raw command to the server. Don't use it unless you can confirm
   # using @config.Type that you're talking with "IRC".
@@ -45,7 +45,7 @@ class exports.IRC extends Server
 
     @client.on 'end', (data) =>
       # Make reconnection
-      new exports.IRC(@name, @config).connect()
+      new exports.IRC(@serverName, @config).connect()
 
     @client.setEncoding('utf8')
     @raw "NICK #{@config.Nick}"

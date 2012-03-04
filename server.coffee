@@ -24,7 +24,7 @@ class Server
   @message = {}
 
   # Name of server which should be modified by constructor.
-  @name = ''
+  @serverName = ''
 
   # Configuration of current server
   @config = {}
@@ -47,7 +47,7 @@ class Server
   @commands = []
 
   # Load the configuration file
-  constructor: (@name, @config) ->
+  constructor: (@serverName, @config) ->
     # Fix bug which causes @channels and @message to be undefined in extended
     # properties
     @channels = {}
@@ -112,7 +112,7 @@ class Server
       'error': '!!!'
 
     if statuses[status]?
-      console.log("[#{@name}] #{statuses[status]} #{msg}")
+      console.log("[#{@serverName}] #{statuses[status]} #{msg}")
     else
       throw new Error "Unknown status #{status} (log)."
 
