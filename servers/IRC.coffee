@@ -4,9 +4,9 @@
 
 # Initalize remove function for arrays
 remove = (value) ->
-  index = this.indexOf(value)
+  index = value.indexOf(value)
   if index isnt -1
-    this.splice(index, 1)
+    value.splice(index, 1)
 
 # Class IRC itself
 class exports.IRC extends Server
@@ -155,7 +155,17 @@ class exports.IRC extends Server
 
       when 'part'
         @message.channel = data[2].toLowerCase()
-        remove @channels[@message.channel], @message.nick
+        if @message.nick is @currentNick
+          delete @channels[@message.channel]
+        else
+          remove @channels[@message.channel], @message.nick
+      when 'kick'
+        @message.channel = data[2].toLowerCase()
+        nick = data[3]
+        if nick is @currentNick
+          delete @channels[@message.channel]
+        else
+          remove @channels[@message.channel], nick
       when 'join'
         break if @message.nick is @currentNick
         @message.channel = data[2].toLowerCase()
@@ -175,11 +185,13 @@ class exports.IRC extends Server
         @parseMessage()
       when 'invite'
         @message.channel = data[3].toLowerCase()
-        if @config.ReactOnInvite
-          @join @message.channel
-        if typeof @config.ReactOnInvite is 'string'
-          message = @config.ReactOnInvite.replace('%s', @message.nick)
-          @send message, @message.channel
+        # Note that joining may throw exception if channel exists.
+        try
+          if @config.ReactOnInvite
+            @join @message.channel
+          if typeof @config.ReactOnInvite is 'string'
+            message = @config.ReactOnInvite.replace('%s', @message.nick)
+            @send message, @message.channel
 
     @loadPlugins()
 
