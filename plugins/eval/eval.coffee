@@ -16,7 +16,7 @@ evaluate = (code) ->
 exports.eval = ->
   if @message.owner
     colors = @config.Type is 'Shell'
-    @respond inspect evaluate(@message.value), false, 2, colors
+    @respond inspect evaluate.apply(this, [@message.value]), false, 2, colors
   else
     @respond "You aren't my owner!"
 
