@@ -3,10 +3,10 @@
 {Server} = require '../server'
 
 # Initalize remove function for arrays
-remove = (value) ->
-  index = value.indexOf(value)
+remove = (array, value) ->
+  index = array.indexOf(value)
   if index isnt -1
-    value.splice(index, 1)
+    array.splice(index, 1)
 
 # Class IRC itself
 class exports.IRC extends Server
@@ -169,10 +169,15 @@ class exports.IRC extends Server
       when 'join'
         break if @message.nick is @currentNick
         @message.channel = data[2].toLowerCase()
-        @channels[@message.channel].push(@message.nick)
+        @channels[@message.channel].push @message.nick
       when 'quit'
         for channel of @channels
           remove @channels[channel], @message.nick
+      when 'nick'
+        for channel of @channels
+          if @message.nick in @channels[channel]
+            remove @channels[channel], @message.nick
+            @channels[channel].push data[2]
       when 'privmsg'
         @message.channel = data[2].toLowerCase()
         @message.text = data[3]
