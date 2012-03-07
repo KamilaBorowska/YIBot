@@ -82,7 +82,7 @@ class exports.IRC extends Server
   onData: (data) =>
     # Sometimes servers split messages using \r. Node expects \n instead.
     # This call should fix it.
-    data = data.replace(/^\s+|\s+$/g, '').split("\r")
+    data = data.trim().split("\r")
 
     if (data.length > 1)
       for line in data
