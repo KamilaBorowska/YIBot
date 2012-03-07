@@ -179,7 +179,7 @@ infix = (expr) ->
   while expr isnt ''
     append = 1
     group = if expectsOp then 'Operators' else 'Functions'
-    float = number.exec(expr)?[0]
+    float = if expectsOp then undefined else number.exec(expr)?[0]
     if float
       output.push +float
       expectsOp = yes
