@@ -2,7 +2,7 @@
 # it as reference to bot commands. Your interface should involve server-
 # specific things in code itself, instead of sending it to external modules.
 
-class Server
+class exports.Server
   # Your current nick
   @nick = ''
 
@@ -55,16 +55,16 @@ class Server
     @storage = {}
     @commands = []
 
-    loadPlugin = (pluginName, config) =>
+    loadPlugin = (pluginName, config = {}) =>
       plugin = require("./plugins/#{pluginName}/#{pluginName}")
-      plugin._init?.apply this, [config]
+      plugin._init?.call this, config
       for property of plugin
         if /^[^_$]/.test(property)
           @addCommands property
       pluginName
 
     # Run init function if it exists in plugin
-    @config.Plugins = for plugin in @config.Plugins
+    for plugin in @config.Plugins
       if typeof plugin is 'object'
         for name, config of plugin
           loadPlugin name, config
@@ -117,18 +117,26 @@ class Server
       throw new Error "Unknown status #{status} (log)."
 
   loadPlugins: ->
-    for plugin in @config.Plugins
+    loadPlugin = (plugin) =>
       try
         plugin = require("./plugins/#{plugin}/#{plugin}")
 
         # Don't run if it's prepended with _ or $, those are for internal use.
         if @message.command? and /^[^_$]/.test(@message.command)
-          break if plugin[@message.command.toLowerCase()]?.apply this
+          return if plugin[@message.command.toLowerCase()]?.apply this
 
-        break if plugin._else?.apply this
+        return if plugin._else?.apply this
       catch e
         throw e if @config.Debug
         @log e, 'error'
+
+    for plugin in @config.Plugins
+      if plugin instanceof Object
+        for plug of plugin
+          loadPlugin plug
+      else
+        loadPlugin plugin
+
 
   parseMessage: ->
     # If prefix is regexp, check regexp
@@ -170,4 +178,11 @@ class Server
     catch e
       @[context] 'Too long response.', channel
 
-exports.Server = Server
+  reloadModules: (every = yes) ->
+    if every
+      for name, server of servers
+        server.reloadModules no
+    else
+      for key of require.cache
+        delete require.cache[key]
+      exports.Server.call this, @serverName, @config

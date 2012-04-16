@@ -14,7 +14,7 @@ class exports.Shell extends Server
     process.stdin.setEncoding 'utf8'
 
     process.stdin.on 'data', (data) =>
-      @message.text = data.replace(/^\s+|\s+$/, '')
+      @message.text = data.trim()
       # No prefixes needed
       @message.type = 'private'
       # You can expect that everybody who has access to shell is owner

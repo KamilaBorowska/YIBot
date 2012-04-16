@@ -1,10 +1,6 @@
 # List of plugins
 Plugins = [
-  # Normal plugin
   'eightball'
-  # Plugin with settings (it has ":" character at end)
-  'uno':
-    channel: '#uno'
 ]
 
 # Servers configuration
@@ -13,7 +9,16 @@ exports.config =
     Type: 'IRC'
     Host: 'irc.freenode.net'
     Channels: [
-      '#yibot'
+      # Normal channel
+      '#botters'
+      
+      # Channel with specific configuration
+      '#yibot':
+        Prefix: ','
+        Plugins: [
+            Plugins...
+            'math'
+        ]
     ]
 
 # Used in case variable doesn't exist.

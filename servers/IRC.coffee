@@ -141,6 +141,8 @@ class exports.IRC extends Server
         @currentNick = @oldnick
       # List of users in this channel
       when '353'
+        break if data.length < 5
+
         channel = data[4].toLowerCase()
 
         nicks = data[5].split(' ')
@@ -154,12 +156,16 @@ class exports.IRC extends Server
           @channels[channel].push(nick)
 
       when 'part'
+        break if data.length < 2
+
         @message.channel = data[2].toLowerCase()
         if @message.nick is @currentNick
           delete @channels[@message.channel]
         else
           remove @channels[@message.channel], @message.nick
       when 'kick'
+        break if data.length < 3
+
         @message.channel = data[2].toLowerCase()
         nick = data[3]
         if nick is @currentNick
@@ -167,6 +173,8 @@ class exports.IRC extends Server
         else
           remove @channels[@message.channel], nick
       when 'join'
+        break if data.length < 2
+
         break if @message.nick is @currentNick
         @message.channel = data[2].toLowerCase()
         @channels[@message.channel].push @message.nick
@@ -174,11 +182,13 @@ class exports.IRC extends Server
         for channel of @channels
           remove @channels[channel], @message.nick
       when 'nick'
+        break if data.length < 2
         for channel of @channels
           if @message.nick in @channels[channel]
             remove @channels[channel], @message.nick
             @channels[channel].push data[2]
       when 'privmsg'
+        break if data.length < 3
         @message.channel = data[2].toLowerCase()
         @message.text = data[3]
 
@@ -189,6 +199,7 @@ class exports.IRC extends Server
 
         @parseMessage()
       when 'invite'
+        break if data.length < 3
         @message.channel = data[3].toLowerCase()
         # Note that joining may throw exception if channel exists.
         try

@@ -19,17 +19,18 @@ shuffle = (obj) ->
 # make dependency hell.
 
 # Assignment is done to deal with scoping issues in CoffeeScript.
-channel = undefined
+config = undefined
 uno = undefined
-exports._init = (config) ->
-  channel = config?.channel
+exports._init = (configuration) ->
+  self = this
+  config = configuration
   # This won't be used. Really. It's just so Uno game will know channel.
   uno = new unoPlay
 
 class unoPlay
   constructor: (@this) ->
     # Settings
-    @channel = channel
+    @channel = config.channel
     # Various stuff
     @running = no
     # Deck
