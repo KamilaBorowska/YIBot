@@ -130,7 +130,7 @@ exports.math = exports.calc = ->
     else
       value
   catch exception
-    "Fail: #{exception.message}"
+    "Error: #{exception.message}"
 
   @respond value
 
@@ -202,7 +202,7 @@ infix = (expr) ->
             expectsOp = no
             append = operator.Name
             return operator
-        throw new Error 'Excepting operator, got something unknown.'
+        throw new Error 'Expecting operator, got something unknown.'
       operator.Arguments = if group is 'Operators' then 2 else 1
       for value, i in stack
         break if value is '('
