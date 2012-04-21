@@ -75,7 +75,7 @@ class exports.IRC extends Server
       throw new Error "#{channel} already is left."
 
   nick: (nick) ->
-    [@oldnick, @currentNick] = [@currentNick, nick]
+    [@oldNick, @currentNick] = [@currentNick, nick]
     @raw "NICK #{nick}"
     true
 
@@ -138,7 +138,7 @@ class exports.IRC extends Server
           @join channel
       # Nickname in use or unknown nick
       when '432', '433'
-        @currentNick = @oldnick
+        @currentNick = @oldNick
       # List of users in this channel
       when '353'
         break if data.length < 5
@@ -173,9 +173,7 @@ class exports.IRC extends Server
         else
           remove @channels[@message.channel], nick
       when 'join'
-        break if data.length < 2
-
-        break if @message.nick is @currentNick
+        break if data.length < 2 or @message.nick is @currentNick
         @message.channel = data[2].toLowerCase()
         @channels[@message.channel].push @message.nick
       when 'quit'

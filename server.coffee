@@ -36,12 +36,19 @@ class exports.Server
   # Storage for various stuff. Your plugins are expected to it using
   # @storage[name], unless those want to affect other plugins behavior.
   #
-  # If plugins want to do it globally, the best guess would be variable
-  # global.storage[name] which is technically global and can be used
-  # anwhere :). This is node, so global should work. Don't use window or any
-  # other kind of global object you can think of (window is not defined and
-  # isn't global, sorry)...
+  # You can use @$ as shortcut (every channel likes money, right?)
   @storage = {}
+
+  # Channel unique storage. It's accessed by @channelStorage[plugin][channel],
+  # but you can also use @_ as shortcut (it's just one brick in the wall).
+  @channelStorage = {}
+
+  # Current plugin storage. You may consider me evil for making punctuation
+  # variables in JavaScript (it's not Perl), but I seriously don't care...
+  @$ = null
+
+  # Current channel storage.
+  @_ = null
 
   # List of commands supported by this bot
   @commands = []
@@ -50,12 +57,14 @@ class exports.Server
   constructor: (@serverName, @config) ->
     # Fix bug which causes @channels and @message to be undefined in extended
     # properties
-    @channels = {}
+    @channels ?= {}
     @message = {}
     @storage = {}
+    @channelStorage = {}
     @commands = []
 
     loadPlugin = (pluginName, config = {}) =>
+      @$ = @storage[pluginName] = {}
       plugin = require("./plugins/#{pluginName}/#{pluginName}")
       plugin._init?.call this, config
       for property of plugin
@@ -119,6 +128,13 @@ class exports.Server
   loadPlugins: ->
     loadPlugin = (plugin) =>
       try
+        @$ = @storage[plugin] ?= {}
+        @_ = if @message.channel
+          if not @channelStorage[plugin]?[@message.channel]?
+            @channelStorage[plugin] ?= {}
+            @channelStorage[plugin][@message.channel] = {}
+          @channelStorage[plugin][@message.channel]
+
         plugin = require("./plugins/#{plugin}/#{plugin}")
 
         # Don't run if it's prepended with _ or $, those are for internal use.
@@ -127,7 +143,8 @@ class exports.Server
 
         return if plugin._else?.apply this
       catch e
-        throw e if @config.Debug
+        if @config.Debug
+          throw e
         @log e, 'error'
 
     for plugin in @config.Plugins

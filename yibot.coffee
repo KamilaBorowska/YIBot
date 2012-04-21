@@ -1,9 +1,5 @@
 # YIBot 2.0
 
-console.log '''
-  WARNING: This is technical preview. Any API may change without warning!
-'''
-
 # Merge objects function
 objectJoin = (objects...) ->
   finalObject = {}

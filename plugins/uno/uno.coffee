@@ -18,19 +18,13 @@ shuffle = (obj) ->
 # Now for actual code. Look, I haven't included Underscore. I don't want to
 # make dependency hell.
 
-# Assignment is done to deal with scoping issues in CoffeeScript.
-config = undefined
-uno = undefined
 exports._init = (configuration) ->
-  self = this
-  config = configuration
-  # This won't be used. Really. It's just so Uno game will know channel.
-  uno = new unoPlay
+  @$.config = configuration
 
 class unoPlay
   constructor: (@this) ->
     # Settings
-    @channel = config.channel
+    @channel = undefined
     # Various stuff
     @running = no
     # Deck
@@ -52,7 +46,7 @@ class unoPlay
     @forceBot = no
 
   isRunning: =>
-    @this.message.channel is @channel and @running
+    @running and isGoodChannel.call @this
 
   getDeck: ->
     shuffle '''
@@ -61,7 +55,7 @@ class unoPlay
       RD RD Y0 Y1 Y1 Y2 Y2 Y3 Y3 Y4 Y4 Y5 Y5 Y6 Y6 Y7 Y7 Y8 Y8 Y9 Y9 YR YR YS
       YS YD YD G0 G1 G1 G2 G2 G3 G3 G4 G4 G5 G5 G6 G6 G7 G7 G8 G8 G9 G9 GR GR
       GS GS GD GD WD WD WD WD W W W W
-    '''.split(/\s/)
+    '''.split /\s/
 
   endJoining: =>
     @joining = no
@@ -77,8 +71,8 @@ class unoPlay
         for [1..5]
           @data[player].cards.push @pop()
         if player isnt @this.currentNick
-          @this.send 'Your cards: ' + (for card in uno.data[player].cards
-              uno.expand card).join(' | '), player
+          @this.send 'Your cards: ' + (for card in @data[player].cards
+              @expand card).join(' | '), player
       players = @players.join ', '
       @this.send "So, let's start! Player order: #{players}", @channel
 
@@ -139,8 +133,8 @@ class unoPlay
           @ai()
         else
           @this.send message, @channel
-          @this.pm 'Your cards: ' + (for card in uno.data[@players[0]].cards
-            uno.expand card).join(' | '), @players[0]
+          @this.pm 'Your cards: ' + (for card in @data[@players[0]].cards
+            @expand card).join(' | '), @players[0]
 
   doesFit: (card) =>
     card[0] is @topCard[0] or card[1] is @topCard[1] or card[0] is 'W'
@@ -159,7 +153,9 @@ class unoPlay
           [maxName, maxValue] = [name, value]
       maxName
 
+    # Please note that it isn't cheating as it only looks at number of cards.
     enemyCards = @data[@players[1]].cards.length
+
     [currentColor, currentNumber] = @topCard
     colors = {}
     numbers = {}
@@ -179,7 +175,7 @@ class unoPlay
       # Filter out ONLY usable cards from this list
       toTry = (card for card in toTry when card in myCards and @doesFit card)
 
-      if toTry[0]?
+      if toTry.length > 0
         @this.message.value = toTry[0]
         exports.play.apply @this
         if toTry[0][0] is 'W'
@@ -227,29 +223,39 @@ class unoPlay
         @this.message.value = 'R'
       exports.color.apply @this
 
-timeout = undefined
+# Rather clever "do-what-i-want" function
+isGoodChannel = ->
+  channel = @$.config.channel
+  if typeof channel is 'function'
+    channel @message.channel
+  else if channel instanceof RegExp
+    channel.test @message.channel
+  else if channel instanceof Array
+    @message.channel in channel
+  else
+    @message.channel is channel
 
 exports.uno = ->
-  return if @message.channel isnt uno.channel
-  if uno.running or uno.joining
-    @respond 'Sorry, but UNO is already running!'
+  return unless isGoodChannel.call this
+  @respond if @_.uno?.running or @_.uno?.joining
+    'Sorry, but UNO is already running!'
   else
-    uno = new unoPlay this
-    @respond 'You have 60 seconds to start. Use "join" command to join.'
+    @_.uno = uno = new unoPlay this
+    uno.channel = @message.channel
     uno.joining = yes
-    timeout = setTimeout uno.endJoining, 60 * 1000
+    @_.timeout = setTimeout uno.endJoining, 60 * 1000
+    'You have 60 seconds to start. Use "join" command to join.'
 
 exports.unostart = ->
-  debugger
-  if timeout isnt undefined
-    clearTimeout timeout
-    timeout = undefined
+  return if (uno = @_.uno)?.isRunning()
+  uno = @_.uno
+  if @_.timeout?
+    clearTimeout @_.timeout
+    delete @_.timeout
     uno.endJoining()
-  else
-    @respond "The game wasn't started to begin with!"
 
 exports.j = exports.jo = exports.join = ->
-  return if not uno.joining or @message.channel isnt uno.channel
+  return if (uno = @_.uno)?.isRunning()
   if @message.nick in uno.players
     @respond 'Sorry, but you\'re already playing.'
   else
@@ -257,32 +263,35 @@ exports.j = exports.jo = exports.join = ->
     @respond 'I have added you. Does anybody else want to play?'
 
 exports.invite = ->
-  if uno.forceBot
-    @respond 'I have already said that I will take the part in this game!'
-  else
-    @respond 'Sure. I will take the part in this game :).'
-    uno.forceBot = true
-    uno.players.push @currentNick
+  return unless isGoodChannel.call this
+  uno = @_.uno
+  if uno?
+    @respond if uno.running
+      "Sorry, but I think it's already running. Perhaps next time."
+    else if uno.forceBot
+      'I have already said that I will take the part in this game!'
+    else
+      uno.forceBot = true
+      uno.players.push @currentNick
+      'Sure. I will take the part in this game :).'
 
 exports.cards = exports.ca = ->
-  return if not uno.isRunning()
+  return unless (uno = @_.uno)?.isRunning()
   @send (for card in uno.data[@message.nick].cards
            uno.expand card).join(' | '), @message.nick
 
 exports.play = exports.pl = exports.p = ->
-  return if not uno.isRunning()
+  return unless (uno = @_.uno)?.isRunning()
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
   if uno.isColorChoosed
-    console.log @this
     @respond 'Choose a color using "co" command! Seriously!'
     return
   # Wild Draw Four is actually WD
   card = uno.simplify @message.value
   # This long line checks if card is playable
   if not card?
-    console.log @message
     @respond "Sorry, but I couldn't understand your request."
   else if uno.doesFit card
     if @message.nick is @currentNick
@@ -355,11 +364,11 @@ exports.play = exports.pl = exports.p = ->
     @respond "Sorry, but this card isn't playable now."
 
 exports.card = exports.cd = ->
-  return if not uno.isRunning()
+  return unless (uno = @_.uno)?.isRunning()
   @respond "Currently played: #{uno.expand uno.topCard}"
 
 exports.draw = exports.dr = exports.d = ->
-  return if not uno.isRunning()
+  return unless (uno = @_.uno)?.isRunning()
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
   else if uno.wasCardDrew
@@ -373,7 +382,7 @@ exports.draw = exports.dr = exports.d = ->
     uno.wasCardDrew = yes
 
 exports.pa = exports.pass = ->
-  return if not uno.isRunning()
+  return unless (uno = @_.uno)?.isRunning()
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
@@ -384,7 +393,7 @@ exports.pa = exports.pass = ->
     @respond 'Have you drew the card?'
 
 exports.co = exports.c = exports.color = ->
-  return if not uno.isRunning()
+  return unless (uno = @_.uno)?.isRunning()
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return

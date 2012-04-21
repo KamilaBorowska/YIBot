@@ -231,10 +231,10 @@ postfix = (expression) ->
   for value in expression
     if value.Callback?
       throw new Error 'Stack error?' if value.Arguments > stack.length
-      arguments = []
+      args = []
       for [1 .. value.Arguments]
-        arguments.push stack.pop()
-      stack.push value.Callback arguments.reverse()...
+        args.push stack.pop()
+      stack.push value.Callback args.reverse()...
     else
       stack.push value
   if stack.length is 1
