@@ -63,22 +63,21 @@ class exports.Server
     @channelStorage = {}
     @commands = []
 
-    loadPlugin = (pluginName, config = {}) =>
-      @$ = @storage[pluginName] = {}
-      plugin = require("./plugins/#{pluginName}/#{pluginName}")
+    if @config.Channels
+      @config.Channels = @toObject @config.Channels
+
+    for property, value of @config
+      for channelName, channel of @config.Channels
+        channel[property] ?= value
+
+    for name, config of @toObject @config.Plugins
+      @$ = @storage[name] = {}
+      plugin = require("./plugins/#{name}/#{name}")
+      # Run init function if it exists in plugin
       plugin._init?.call this, config
       for property of plugin
         if /^[^_$]/.test(property)
           @addCommands property
-      pluginName
-
-    # Run init function if it exists in plugin
-    for plugin in @config.Plugins
-      if typeof plugin is 'object'
-        for name, config of plugin
-          loadPlugin name, config
-      else
-        loadPlugin plugin
 
   # When ran, server is expected to try connecting and starting reading data.
   connect: ->
@@ -103,6 +102,7 @@ class exports.Server
   # argument depending on where you're using it. In case it's impossible,
   # you're expected to throw exception. Otherwise, return true.
   join: (id) ->
+    @config.Channels[id] ?= @config
 
   # This is part command. It causes client to leave the channel. If it's
   # impossible throw exception, else return true.
@@ -126,7 +126,8 @@ class exports.Server
       throw new Error "Unknown status #{status} (log)."
 
   loadPlugins: ->
-    loadPlugin = (plugin) =>
+    channelPlugins = @config.Channels[@message?.channel]?.Plugins
+    for plugin of @toObject channelPlugins ? @config.Plugins
       try
         @$ = @storage[plugin] ?= {}
         @_ = if @message.channel
@@ -147,21 +148,16 @@ class exports.Server
           throw e
         @log e, 'error'
 
-    for plugin in @config.Plugins
-      if plugin instanceof Object
-        for plug of plugin
-          loadPlugin plug
-      else
-        loadPlugin plugin
-
 
   parseMessage: ->
+    # In case of private messages, use global prefix
+    prefix = @config.Channels[@message?.channel]?.Prefix ? @config.Prefix
     # If prefix is regexp, check regexp
-    if @config.Prefix instanceof RegExp and @config.Prefix.test(@message.text)
+    if prefix instanceof RegExp and prefix.test(@message.text)
       # If it matches prefix, remove it from text
-      withoutPrefix = @message.text.replace(@config.Prefix, '')
-    else if @message.text.indexOf(@config.Prefix) is 0
-      withoutPrefix = @message.text.substr(@config.Prefix.length)
+      withoutPrefix = @message.text.replace(prefix, '')
+    else if @message.text.indexOf(prefix) is 0
+      withoutPrefix = @message.text.substr(prefix.length)
     else if @message.type is 'private'
       withoutPrefix = @message.text
 
@@ -203,3 +199,13 @@ class exports.Server
       for key of require.cache
         delete require.cache[key]
       exports.Server.call this, @serverName, @config
+
+  toObject: (array) ->
+    object = {}
+    for value in array
+      if value instanceof Object
+        for key, val of value
+          object[key] = val
+      else
+        object[value] = {}
+    object

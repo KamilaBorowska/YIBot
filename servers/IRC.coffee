@@ -54,6 +54,7 @@ class exports.IRC extends Server
     @currentNick = @config.Nick
 
   join: (channel) =>
+    super
     # Channels are case insensitive. This is attempt to fix this.
     channel = channel.toLowerCase()
 
@@ -134,7 +135,7 @@ class exports.IRC extends Server
     switch @message.type
       # When '001' is received you're free to join any channel
       when '001'
-        for channel in @config.Channels
+        for channel of @config.Channels
           @join channel
       # Nickname in use or unknown nick
       when '432', '433'
