@@ -127,7 +127,7 @@ class exports.Server
 
   loadPlugins: ->
     channelPlugins = @config.Channels[@message?.channel]?.Plugins
-    for plugin of @toObject channelPlugins ? @config.Plugins
+    for plugin, config of @toObject channelPlugins ? @config.Plugins
       try
         @$ = @storage[plugin] ?= {}
         @_ = if @message.channel
@@ -140,9 +140,9 @@ class exports.Server
 
         # Don't run if it's prepended with _ or $, those are for internal use.
         if @message.command? and /^[^_$]/.test(@message.command)
-          return if plugin[@message.command.toLowerCase()]?.apply this
+          return if plugin[@message.command.toLowerCase()]?.call this, config
 
-        return if plugin._else?.apply this
+        return if plugin._else?.call this, config
       catch e
         if @config.Debug
           throw e
