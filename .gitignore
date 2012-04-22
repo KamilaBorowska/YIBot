@@ -4,3 +4,5 @@ config.coffee
 *.json
 # Compiled JS files
 *.js
+# npm-debug.log
+npm-debug.log
