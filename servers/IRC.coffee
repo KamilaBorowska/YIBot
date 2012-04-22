@@ -174,8 +174,8 @@ class exports.IRC extends Server
         else
           remove @channels[@message.channel], nick
       when 'join'
-        break if data.length < 2 or @message.nick is @currentNick
         @message.channel = data[2].toLowerCase()
+        break if data.length < 2 or @message.nick is @currentNick
         @channels[@message.channel].push @message.nick
       when 'quit'
         for channel of @channels
