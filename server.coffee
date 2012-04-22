@@ -66,7 +66,7 @@ class exports.Server
     @channelStorage = {}
     @commands = {}
 
-    if @config.Channels
+    if @config.Channels and @config.Channels instanceof Array
       @config.Channels = @toObject @config.Channels
 
     for property, value of @config
