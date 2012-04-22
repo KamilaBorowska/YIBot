@@ -50,8 +50,11 @@ class exports.Server
   # Current channel storage.
   @_ = null
 
+  # Name of current plugin
+  @plugin = null
+
   # List of commands supported by this bot
-  @commands = []
+  @commands = {}
 
   # Load the configuration file
   constructor: (@serverName, @config) ->
@@ -61,7 +64,7 @@ class exports.Server
     @message = {}
     @storage = {}
     @channelStorage = {}
-    @commands = []
+    @commands = {}
 
     if @config.Channels
       @config.Channels = @toObject @config.Channels
@@ -70,14 +73,19 @@ class exports.Server
       for channelName, channel of @config.Channels
         channel[property] ?= value
 
-    for name, config of @toObject @config.Plugins
-      @$ = @storage[name] = {}
-      plugin = require("./plugins/#{name}/#{name}")
-      # Run init function if it exists in plugin
-      plugin._init?.call this, config
-      for property of plugin
-        if /^[^_$]/.test(property)
-          @addCommands property
+    channelPlugins = for channel, value of @config.Channels
+      @toObject value.Plugins
+
+    for plugins in [channelPlugins..., @toObject @config.Plugins]
+      for name, config of plugins
+        @plugin = name
+        @$ = @storage[name] = {}
+        plugin = require "./plugins/#{name}/#{name}"
+        # Run init function if it exists in plugin
+        plugin._init?.call this, config
+        for property of plugin
+          if /^[^_$]/.test(property)
+            @addCommands property
 
   # When ran, server is expected to try connecting and starting reading data.
   connect: ->
@@ -129,14 +137,15 @@ class exports.Server
     channelPlugins = @config.Channels[@message?.channel]?.Plugins
     for plugin, config of @toObject channelPlugins ? @config.Plugins
       try
-        @$ = @storage[plugin] ?= {}
+        @plugin = plugin
+        @$ = @storage[@plugin] ?= {}
         @_ = if @message.channel
-          if not @channelStorage[plugin]?[@message.channel]?
-            @channelStorage[plugin] ?= {}
-            @channelStorage[plugin][@message.channel] = {}
-          @channelStorage[plugin][@message.channel]
+          if not @channelStorage[@plugin]?[@message.channel]?
+            @channelStorage[@plugin] ?= {}
+            @channelStorage[@plugin][@message.channel] = {}
+          @channelStorage[@plugin][@message.channel]
 
-        plugin = require("./plugins/#{plugin}/#{plugin}")
+        plugin = require("./plugins/#{@plugin}/#{@plugin}")
 
         # Don't run if it's prepended with _ or $, those are for internal use.
         if @message.command? and /^[^_$]/.test(@message.command)
@@ -171,17 +180,25 @@ class exports.Server
   # for modules like "factoids" where commands aren't known before using
   # "_else".
   addCommands: (commands...) ->
-    for command in commands
-      if command not in @commands
-        @commands.push command
+    @commands[@plugin] ?= []
+    for command in commands when command not in @commands[@plugin]
+      @commands[@plugin].push command
 
   # Removes commands from list of commands.
   removeCommands: (commands...) ->
     for command in commands
-      if command in @commands
-        @commands.remove command
-      else
-        throw new Error 'Unknown command!'
+      if command in @commands[@plugin]
+        @commands[@plugin].splice @commands[@plugin].indexOf(command), 1
+
+  getCommands: (channel = @message.channel) ->
+    plugins = []
+    channelPlugins = @config.Channels[channel]?.Plugins
+    for plugin of @toObject channelPlugins ? @config.Plugins
+      continue unless @commands[plugin]?
+      for plug in @commands[plugin]
+        if plug not in plugins
+          plugins.push plug
+    plugins
 
   # Parses through pastebin module in order to load shortened version of text
   pastebin: (text, channel, context) =>

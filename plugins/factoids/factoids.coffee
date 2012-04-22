@@ -17,7 +17,7 @@ exports.add = ->
 
   if @storage[module][command]?
     @respond 'Factoid successfully modified!'
-  else if @commands[command]?
+  else if command in @getCommands()
     # If we have confirmed that it wasn't inserted by factoids, return if it
     # exists anyways.
     @respond 'This command is used internally! You cannot overwrite it!'
