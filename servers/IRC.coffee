@@ -135,6 +135,12 @@ class exports.IRC extends Server
     switch @message.type
       # When '001' is received you're free to join any channel
       when '001'
+        if @config.NickServ
+          nickserv = @config.NickServ
+          message = nickserv.Command ? 'IDENTIFY <nick> <password>'
+          message = message.replace(/<nick>/g, @currentNick)
+          message = message.replace(/<password>/g, nickserv.Password)
+          @pm message, 'NickServ'
         for channel of @config.Channels
           @join channel
       # Nickname in use or unknown nick

@@ -1,0 +1,60 @@
+info it worked if it ends with ok
+verbose cli [ 'node',
+verbose cli   'C:\\Users\\Konrad\\AppData\\Roaming\\npm\\node_modules\\npm\\bin\\npm-cli.js',
+verbose cli   'install',
+verbose cli   'dart' ]
+info using npm@1.1.9
+info using node@v0.7.6
+verbose config file C:\Users\Konrad\.npmrc
+verbose config file C:\Program Files (x86)\nodejs\etc\npmrc
+verbose config file C:\Users\Konrad\AppData\Roaming\npm\node_modules\npm\npmrc
+verbose mkdir done: C:\Users\Konrad\AppData\Roaming\npm 755
+verbose mkdir done: C:\Users\Konrad 755
+verbose caching C:\Users\Konrad\node_modules\sprint\package.json
+verbose caching C:\Users\Konrad\node_modules\docco\package.json
+verbose loadDefaults docco@0.3.0
+verbose caching C:\Users\Konrad\node_modules\sprintf\package.json
+verbose caching C:\Users\Konrad\node_modules\file\package.json
+verbose loadDefaults file@0.2.0
+verbose caching C:\Users\Konrad\node_modules\underscore\package.json
+verbose caching C:\Users\Konrad\node_modules\repl\package.json
+verbose loadDefaults repl@0.1.3
+verbose caching C:\Users\Konrad\node_modules\format\package.json
+verbose caching C:\Users\Konrad\node_modules\printf\package.json
+verbose caching C:\Users\Konrad\node_modules\bigdecimal\package.json
+verbose loadDefaults bigdecimal@0.6.1
+verbose caching C:\Users\Konrad\node_modules\s\package.json
+verbose caching C:\Users\Konrad\node_modules\npm\package.json
+verbose caching C:\Users\Konrad\node_modules\underscore.string\package.json
+verbose caching C:\Users\Konrad\node_modules\jison\package.json
+verbose cache add [ 'dart', null ]
+silly cache add: name, spec, args [ undefined, 'dart', [ 'dart', null ] ]
+verbose parsed url { pathname: 'dart', path: 'dart', href: 'dart' }
+verbose addNamed [ 'dart', '' ]
+verbose addNamed [ null, '' ]
+silly name, range, hasData [ 'dart', '', false ]
+verbose raw, before any munging dart
+verbose url resolving [ 'https://registry.npmjs.org/', './dart' ]
+verbose url resolved https://registry.npmjs.org/dart
+http GET https://registry.npmjs.org/dart
+http 404 https://registry.npmjs.org/dart
+silly get cb [ 404,
+silly get cb   { server: 'CouchDB/1.2.0 (Erlang OTP/R15B)',
+silly get cb     date: 'Sun, 22 Apr 2012 15:10:17 GMT',
+silly get cb     'content-type': 'application/json',
+silly get cb     'content-length': '52',
+silly get cb     'cache-control': 'must-revalidate' } ]
+ERR! 404 'dart' is not in the npm registry.
+ERR! 404 You should bug the author to publish it
+ERR! 404 Note that you can also install from a
+ERR! 404 tarball, folder, or http url, or git url.
+ERR! 
+ERR! System Windows_NT 6.1.7601
+ERR! command "node" "C:\\Users\\Konrad\\AppData\\Roaming\\npm\\node_modules\\npm\\bin\\npm-cli.js" "install" "dart"
+ERR! cwd C:\Users\Konrad\Desktop\tryagain
+ERR! node -v v0.7.6
+ERR! npm -v 1.1.9
+ERR! code E404
+ERR! message 404 Not Found: dart
+ERR! errno {}
+verbose exit [ 1, true ]

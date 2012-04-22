@@ -11,7 +11,7 @@ exports.config =
     Channels: [
       # Normal channel
       '#botters'
-      
+
       # Channel with specific configuration
       '#yibot':
         Prefix: ','
@@ -20,6 +20,9 @@ exports.config =
             'math'
         ]
     ]
+    NickServ:
+      Nick: 'NickServ'
+      Password: 'sample-password'
 
 # Used in case variable doesn't exist.
 exports.globals =
