@@ -43,6 +43,9 @@ class exports.Server
   # but you can also use @_ as shortcut (it's just one brick in the wall).
   @channelStorage = {}
 
+  # Just like @channelStorage, except for private messages
+  @privateStorage = {}
+
   # Current plugin storage. You may consider me evil for making punctuation
   # variables in JavaScript (it's not Perl), but I seriously don't care...
   @$ = null
@@ -64,6 +67,7 @@ class exports.Server
     @message = {}
     @storage = {}
     @channelStorage = {}
+    @privateStorage = {}
     @commands = {}
 
     if @config.Channels and @config.Channels instanceof Array
@@ -74,18 +78,30 @@ class exports.Server
         channel[property] ?= value
 
     channelPlugins = for channel, value of @config.Channels
-      @toObject value.Plugins
+      object = @toObject value.Plugins
+      object._channel = channel
+      object
 
+    processedPlugins = []
     for plugins in [channelPlugins..., @toObject @config.Plugins]
-      for name, config of plugins
+      for name, config of plugins when name isnt '_channel'
         @plugin = name
         @$ = @storage[name] = {}
         plugin = require "./plugins/#{name}/#{name}"
         # Run init function if it exists in plugin
-        plugin._init?.call this, config
-        for property of plugin
-          if /^[^_$]/.test(property)
-            @addCommands property
+        if name not in processedPlugins
+          plugin._init?.call this, config
+          for property of plugin
+            if /^[^_$]/.test(property)
+              @addCommands property
+          processedPlugins.push name
+
+        if plugin._channelInit? and plugins._channel?
+          @channelStorage[name] ?= {}
+          @channelStorage[name][plugins._channel] ?= {}
+          @_ = @channelStorage[name][plugins._channel]
+          plugin._channelInit.call this, config
+
 
   # When ran, server is expected to try connecting and starting reading data.
   connect: ->
@@ -139,11 +155,17 @@ class exports.Server
       try
         @plugin = plugin
         @$ = @storage[@plugin] ?= {}
+
+        storage = if @message.type is 'private'
+          @privateStorage
+        else
+          @channelStorage
+
         @_ = if @message.channel
-          if not @channelStorage[@plugin]?[@message.channel]?
-            @channelStorage[@plugin] ?= {}
-            @channelStorage[@plugin][@message.channel] = {}
-          @channelStorage[@plugin][@message.channel]
+          if not storage[@plugin]?[@message.channel]?
+            storage[@plugin] ?= {}
+            storage[@plugin][@message.channel] = {}
+          storage[@plugin][@message.channel]
 
         plugin = require("./plugins/#{@plugin}/#{@plugin}")
 
