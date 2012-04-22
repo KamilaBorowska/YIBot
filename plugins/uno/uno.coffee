@@ -18,8 +18,6 @@ shuffle = (obj) ->
 # Now for actual code. Look, I haven't included Underscore. I don't want to
 # make dependency hell.
 
-exports._init = (configuration) ->
-  @$.config = configuration
 
 class unoPlay
   constructor: (@this) ->
@@ -44,9 +42,6 @@ class unoPlay
     @wasCardDrew = no
     # Was the bot forced
     @forceBot = no
-
-  isRunning: =>
-    @running and isGoodChannel.call @this
 
   getDeck: ->
     shuffle '''
@@ -223,20 +218,7 @@ class unoPlay
         @this.message.value = 'R'
       exports.color.apply @this
 
-# Rather clever "do-what-i-want" function
-isGoodChannel = ->
-  channel = @$.config.channel
-  if typeof channel is 'function'
-    channel @message.channel
-  else if channel instanceof RegExp
-    channel.test @message.channel
-  else if channel instanceof Array
-    @message.channel in channel
-  else
-    @message.channel is channel
-
 exports.uno = ->
-  return unless isGoodChannel.call this
   @respond if @_.uno?.running or @_.uno?.joining
     'Sorry, but UNO is already running!'
   else
@@ -247,7 +229,7 @@ exports.uno = ->
     'You have 60 seconds to start. Use "join" command to join.'
 
 exports.unostart = ->
-  return if (uno = @_.uno)?.isRunning()
+  return if (uno = @_.uno)?.running
   uno = @_.uno
   if @_.timeout?
     clearTimeout @_.timeout
@@ -255,7 +237,7 @@ exports.unostart = ->
     uno.endJoining()
 
 exports.j = exports.jo = exports.join = ->
-  return if (uno = @_.uno)?.isRunning()
+  return if (uno = @_.uno)?.running
   if @message.nick in uno.players
     @respond 'Sorry, but you\'re already playing.'
   else
@@ -263,7 +245,6 @@ exports.j = exports.jo = exports.join = ->
     @respond 'I have added you. Does anybody else want to play?'
 
 exports.invite = ->
-  return unless isGoodChannel.call this
   uno = @_.uno
   if uno?
     @respond if uno.running
@@ -276,12 +257,12 @@ exports.invite = ->
       'Sure. I will take the part in this game :).'
 
 exports.cards = exports.ca = ->
-  return unless (uno = @_.uno)?.isRunning()
+  return unless (uno = @_.uno)?.running
   @send (for card in uno.data[@message.nick].cards
            uno.expand card).join(' | '), @message.nick
 
 exports.play = exports.pl = exports.p = ->
-  return unless (uno = @_.uno)?.isRunning()
+  return unless (uno = @_.uno)?.running
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
@@ -364,11 +345,11 @@ exports.play = exports.pl = exports.p = ->
     @respond "Sorry, but this card isn't playable now."
 
 exports.card = exports.cd = ->
-  return unless (uno = @_.uno)?.isRunning()
+  return unless (uno = @_.uno)?.running
   @respond "Currently played: #{uno.expand uno.topCard}"
 
 exports.draw = exports.dr = exports.d = ->
-  return unless (uno = @_.uno)?.isRunning()
+  return unless (uno = @_.uno)?.running
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
   else if uno.wasCardDrew
@@ -382,7 +363,7 @@ exports.draw = exports.dr = exports.d = ->
     uno.wasCardDrew = yes
 
 exports.pa = exports.pass = ->
-  return unless (uno = @_.uno)?.isRunning()
+  return unless (uno = @_.uno)?.running
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
@@ -393,7 +374,7 @@ exports.pa = exports.pass = ->
     @respond 'Have you drew the card?'
 
 exports.co = exports.c = exports.color = ->
-  return unless (uno = @_.uno)?.isRunning()
+  return unless (uno = @_.uno)?.running
   if uno.players[0] isnt @message.nick
     @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
