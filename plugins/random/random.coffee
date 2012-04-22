@@ -16,7 +16,7 @@ exports.random = ->
     return
 
   else if throws is ''
-    throws = 0
+    throws = '1'
   else if throws > 100000
     @respond 'Seriously, why you need so many throws?'
     return
