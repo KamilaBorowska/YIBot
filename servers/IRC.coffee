@@ -206,7 +206,7 @@ class exports.IRC extends Server
             @join @message.channel
           if typeof @config.ReactOnInvite is 'string'
             {format} = require 'util'
-            message = format @config.ReactOnInvite.replace, @message.nick
+            message = format @config.ReactOnInvite, @message.nick
             @send message, @message.channel
 
     @loadPlugins()
