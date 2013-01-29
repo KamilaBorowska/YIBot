@@ -42,7 +42,11 @@ class unoPlay
     @wasCardDrew = no
     # Was the bot forced
     @forceBot = no
-
+    # Number of timeouts
+    @timeouts = 0
+    # Timeout
+    @timeout = no
+    
   getDeck: ->
     shuffle '''
       B0 B1 B1 B2 B2 B3 B3 B4 B4 B5 B5 B6 B6 B7 B7 B8 B8 B9 B9 BR BR BS BS BD
@@ -53,8 +57,10 @@ class unoPlay
     '''.split /\s/
 
   endJoining: =>
+    notice = @this.notice or @this.pm
     @joining = no
     if @players.length is 1 and not @forceBot
+      @forceBot = yes
       # Push YIBot to gameplay if there is just one player
       @players.push @this.currentNick
     if @players.length >= 1
@@ -63,17 +69,18 @@ class unoPlay
       for player in @players
         @data[player] = {}
         @data[player].cards = []
-        for [1..5]
+        for [1..7]
           @data[player].cards.push @pop()
         if player isnt @this.currentNick
-          @this.send 'Your cards: ' + (for card in @data[player].cards
-              @expand card).join(' | '), player
+          notice 'Your cards: ' + (for card in @data[player].cards
+              @expand card, yes).sort().join(' | '), player
       players = @players.join ', '
       @this.send "So, let's start! Player order: #{players}", @channel
 
       card = @expand @topCard
       @this.send "By the way, I have set #{card} as top card.", @channel
       @running = yes
+      @setTimeout()
 
       # Let's start with AI if this happens...
       if @players[0] is @this.currentNick
@@ -86,41 +93,47 @@ class unoPlay
       @deck = @getDeck()
     @deck.pop()
 
-  expand: (name) ->
-    name.replace(/^B$/, 'Wild (Blue)')
-        .replace(/^R$/, 'Wild (Red)')
-        .replace(/^G$/, 'Wild (Green)')
-        .replace(/^Y$/, 'Wild (Yellow)')
-        .replace(/WD/, 'Wild Draw Four')
-        .replace(/^B/, 'Blue ')
-        .replace(/^R/, 'Red ')
-        .replace(/^G/, 'Green ')
-        .replace(/^Y/, 'Yellow ')
-        .replace(/R$/, 'Reverse')
-        .replace(/S$/, 'Skip')
-        .replace(/D$/, 'Draw Two')
-        .replace(/^W$/, 'Wild')
+  expand: (name, bold) ->
+    bold = if bold and @doesFit name then "\x02" else ""
+    bold + name.replace(/^B$/, '\x0312Wild (Blue)')
+               .replace(/^R$/, '\x035Wild (Red)')
+               .replace(/^G$/, '\x039Wild (Green)')
+               .replace(/^Y$/, '\x038Wild (Yellow)')
+               .replace(/WD/, 'Wild Draw Four')
+               .replace(/^B/, '\x0312Blue ')
+               .replace(/^R/, '\x035Red ')
+               .replace(/^G/, '\x039Green ')
+               .replace(/^Y/, '\x038Yellow ')
+               .replace(/R$/, 'Reverse')
+               .replace(/S$/, 'Skip')
+               .replace(/D$/, 'Draw Two')
+               .replace(/^W$/, 'Wild') + "\x0F"
 
   simplify: (name) ->
     if result = /^([RGBYW])(?:(?:.*?\s+.*?\b)?([SRD0-9]|$)|\w+)/i.exec name
       result[1..2].join('').toUpperCase()
 
   nextPlayer: (skipped = no) =>
+    notice = @this.notice or @this.pm
     @wasCardDrew = no
     @isColorChoosed = no
 
     @players.push @players.shift()
     if skipped
+      @timeouts = 0
       @this.send "#{@players[0]}'s round was skipped!", @channel
     else
       if not @running
+        clearTimeout @timeout if @timeout
         @this.send "#{@this.message.nick} has WON!", @channel
         for nick in @players
           if @data[nick].cards.length is 0
             @this.send "#{nick}: NONE!", @channel
           else
-            @this.send "#{nick}: #{@data[nick].cards.join ' | '}", @channel
+            @this.send "#{nick}: " + (for card in @data[nick].cards
+              @expand card).sort().join(' | '), @channel
       else
+        @setTimeout()
         message = "Continuing with #{@players[0]}'s round! " +
                   "The top card is #{@expand @topCard}."
         if @players[0] is @this.currentNick
@@ -128,9 +141,34 @@ class unoPlay
           @ai()
         else
           @this.send message, @channel
-          @this.pm 'Your cards: ' + (for card in @data[@players[0]].cards
-            @expand card).join(' | '), @players[0]
+          notice 'Your cards: ' + (for card in @data[@players[0]].cards
+            @expand card, yes).sort().join(' | '), @players[0]
 
+  setTimeout: ->
+    clearTimeout @timeout if @timeout
+    @timeout = setTimeout (=>
+      timeouts = @timeouts + 1
+      if timeouts == @players.length - @forceBot
+        @running = no
+        @this.send (if @players.length == 2
+          'Sorry, but game was stopped because of inactivity'
+        else
+          'Stopping game because too many timeouts.'), @channel
+      else
+        @ignorePlayer = yes
+        @this._ =
+          uno: this
+        @this.send "Too late, #{@players[0]}.", @channel
+        if @isColorChoosed
+          exports.color.call @this, undefined, color
+        else
+          unless @wasCardDrew
+            exports.draw.call @this
+          exports.pass.call @this
+        @timeouts = timeouts
+        @ignorePlayer = no
+    ), 150000
+    
   doesFit: (card) =>
     card[0] is @topCard[0] or card[1] is @topCard[1] or card[0] is 'W'
 
@@ -173,7 +211,7 @@ class unoPlay
       if toTry.length > 0
         @this.message.value = toTry[0]
         exports.play.apply @this
-        if toTry[0][0] is 'W'
+        if @isColorChoosed
           @this.message.value = max colors
           if @this.message.value is 'W'
             # Because I seriously don't care about colors
@@ -208,18 +246,21 @@ class unoPlay
     if @this.message.value is 'W'
       if 'W' not in myCards
         @this.message.value = 'WD'
-
+    
     exports.play.apply @this
 
-    if @this.message.value[0] is 'W'
+    if @isColorChoosed
       @this.message.value = max colors
       if @this.message.value is 'W'
         # Because I seriously don't care about colors
         @this.message.value = 'R'
       exports.color.apply @this
 
+respond = (uno, msg) ->
+  @send msg, uno?.channel or @message.channel
+      
 exports.uno = ->
-  @respond if @_.uno?.running or @_.uno?.joining
+  respond.call this, uno, if @_.uno?.running or @_.uno?.joining
     'Sorry, but UNO is already running!'
   else
     @_.uno = uno = new unoPlay this
@@ -239,15 +280,15 @@ exports.unostart = ->
 exports.j = exports.jo = exports.join = ->
   return if (uno = @_.uno)?.running
   if @message.nick in uno.players
-    @respond 'Sorry, but you\'re already playing.'
+    respond.call this, uno, 'Sorry, but you\'re already playing.'
   else
     uno.players.push @message.nick
-    @respond 'I have added you. Does anybody else want to play?'
+    respond.call this, uno, 'I have added you. Does anybody else want to play?'
 
 exports.invite = ->
   uno = @_.uno
   if uno?
-    @respond if uno.running
+    respond.call this, uno, if uno.running
       "Sorry, but I think it's already running. Perhaps next time."
     else if uno.forceBot
       'I have already said that I will take the part in this game!'
@@ -257,41 +298,44 @@ exports.invite = ->
       'Sure. I will take the part in this game :).'
 
 exports.cards = exports.ca = ->
+  notice = @notice or @pm
   return unless (uno = @_.uno)?.running
-  @send (for card in uno.data[@message.nick].cards
-           uno.expand card).join(' | '), @message.nick
+  notice (for card in uno.data[@message.nick].cards
+           uno.expand card, yes).sort().join(' | '), @message.nick
 
 exports.play = exports.pl = exports.p = ->
+  notice = @notice or @pm
   return unless (uno = @_.uno)?.running
-  if uno.players[0] isnt @message.nick
-    @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
+  if uno.players[0] isnt @message.nick and not uno.ignorePlayer
+    respond.call this, uno, "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
   if uno.isColorChoosed
-    @respond 'Choose a color using "co" command! Seriously!'
+    respond.call this, uno, 'Choose a color using "co" command! Seriously!'
     return
   # Wild Draw Four is actually WD
   card = uno.simplify @message.value
   # This long line checks if card is playable
   if not card?
-    @respond "Sorry, but I couldn't understand your request."
+    respond.call this, uno, "Sorry, but I couldn't understand your request."
   else if uno.doesFit card
     if @message.nick is @currentNick
-      @respond "#{@currentNick} is placing #{uno.expand card}."
+      respond.call this, uno, "#{@currentNick} is placing #{uno.expand card}."
     index = uno.data[uno.players[0]].cards.indexOf card
     if index >= 0
       if uno.data[uno.players[0]].cards.length is 2
-        @respond "#{uno.players[0]} says UNO!"
+        respond.call this, uno, "#{uno.players[0]} says UNO!"
       else if uno.data[uno.players[0]].cards.length is 1
         uno.running = no
 
       uno.data[uno.players[0]].cards.splice index, 1
       uno.topCard = card
+
       switch card[1]
         # Wild card
         when undefined
           uno.isColorChoosed = yes
           if uno.running and @currentNick isnt @message.nick
-            @respond 'Choose a color using "co" command!'
+            respond.call this, uno, 'Choose a color using "co" command!'
           return
         when 'D'
           # Wild draw four
@@ -309,13 +353,16 @@ exports.play = exports.pl = exports.p = ->
             target = uno.players[1]
 
             if target isnt @currentNick
-              @pm "You have received #{receive.join(', ')}. Very fun!", target
+              notice "You have received #{receive.join(', ')}. Very fun!", target
 
-            @respond "#{target} has received four cards!"
+            respond.call this, uno, "#{target} has received four cards!"
 
-            if uno.running and @currentNick isnt @message.nick
-              @respond 'Choose a color using "co" command!'
-            return
+            if uno.running
+              if @currentNick isnt @message.nick
+                respond.call this, uno, 'Choose a color using "co" command!'
+              return
+            else
+              uno.nextPlayer yes
           # Draw two
           else
             cards = []
@@ -324,68 +371,81 @@ exports.play = exports.pl = exports.p = ->
 
             receive = for card in cards
               uno.data[uno.players[1]].cards.push card
-              uno.expand card
+              uno.expand card, yes
 
             target = uno.players[1]
             if target isnt @currentNick
-              @pm "You have received #{receive.join(' and ')}. Fun!", target
-            @respond "#{target} has received two cards!"
+              notice "You have received #{receive.join(' and ')}. Fun!", target
+            respond.call this, uno, "#{target} has received two cards!"
 
             uno.nextPlayer yes
         when 'R'
-          @respond 'Order was reversed!'
-          uno.players[1..] = uno.players[1..].reverse()
+          if uno.players.length == 2
+            uno.nextPlayer yes
+          else
+            respond.call this, uno, 'Order was reversed!'
+            uno.players[1..] = uno.players[1..].reverse()
         when 'S'
           uno.nextPlayer yes
-
+      uno.timeouts = 0
       uno.nextPlayer no
     else
-      @respond 'You don\'t have this card.'
+      respond.call this, uno, 'You don\'t have this card.'
   else
-    @respond "Sorry, but this card isn't playable now."
+    respond.call this, uno, "Sorry, but this card isn't playable now."
 
 exports.card = exports.cd = ->
   return unless (uno = @_.uno)?.running
-  @respond "Currently played: #{uno.expand uno.topCard}"
+  respond.call this, uno, "Currently played: #{uno.expand uno.topCard}"
 
 exports.draw = exports.dr = exports.d = ->
+  notice = @notice or @pm
   return unless (uno = @_.uno)?.running
-  if uno.players[0] isnt @message.nick
-    @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
+  if uno.players[0] isnt @message.nick and not uno.ignorePlayer
+    respond.call this, uno, "Please wait. Currently, we have #{uno.players[0]}'s round!"
   else if uno.wasCardDrew
-    @respond 'Sorry, but you have drew card already.'
+    respond.call this, uno, 'Sorry, but you have drew card already.'
   else
     card = uno.pop()
-    uno.data[@message.nick].cards.push card
-    @respond "#{@message.nick} has drew the card."
-    if @message.nick isnt @currentNick
-      @pm "Spoiler: This card is #{uno.expand card}.", @message.nick
+    uno.data[uno.players[0]].cards.push card
+    respond.call this, uno, "#{uno.players[0]} has drew the card."
+    if @message.nick isnt @currentNick or uno.ignorePlayer
+      notice "Spoiler: This card is #{uno.expand card, yes}.", uno.players[0]
     uno.wasCardDrew = yes
 
 exports.pa = exports.pass = ->
   return unless (uno = @_.uno)?.running
-  if uno.players[0] isnt @message.nick
-    @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
-    return
-  if uno.wasCardDrew
-    @respond "#{@message.nick} has skipped his round!"
+  if uno.players[0] isnt @message.nick and not uno.ignorePlayer
+    respond.call this, uno, "Please wait. Currently, we have #{uno.players[0]}'s round!"
+  else if uno.wasCardDrew and not uno.isColorChoosed
+    uno.timeouts = 0
+    respond.call this, uno, "#{uno.players[0]} has skipped his round!"
     uno.nextPlayer no
+  else if uno.isColorChoosed
+    respond.call this, uno, "Choose color, seriously!"
   else
-    @respond 'Have you drew the card?'
+    respond.call this, uno, 'Have you drew the card?'
 
-exports.co = exports.c = exports.color = ->
+exports.stats = exports.stat = exports.st = exports.s = exports.count = exports.ct = ->
+  return unless (uno = @_.uno)?.running
+  for player in uno.players
+    respond.call this, uno, "#{player}: #{uno.data[player].cards.length}"
+    
+exports.co = exports.c = exports.color = (blah, color) ->
   return unless (uno = @_.uno)?.running
   if uno.players[0] isnt @message.nick
-    @respond "Please wait. Currently, we have #{uno.players[0]}'s round!"
+    respond.call this, uno, "Please wait. Currently, we have #{uno.players[0]}'s round!"
     return
   if uno.isColorChoosed
-    color = @message.value.toUpperCase()[0]
+    color or= @message.value
+    color = color.toUpperCase()[0]
     if /[RGBY]/.test(color)
       if uno.topCard is 'WD'
         uno.nextPlayer yes
       uno.topCard = "#{color}(Wild)"
+      uno.timeouts = 0
       uno.nextPlayer no
     else
-      @respond 'Unknown color'
+      respond.call this, uno, 'Unknown color'
   else
-    @respond 'You should first use Wild Card, you know...'
+    respond.call this, uno, 'You should first use Wild Card, you know...'
