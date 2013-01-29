@@ -221,7 +221,7 @@ class exports.IRC extends Server
     @message = {}
 
     for channelName, channel of @response
-      if channel.length > 7
+      if channel.length > (@config.Channels[channelName].MaxLines or @config.MaxLines or 7)
         @pastebin channel, channelName, 'send'
       else
         for response in channel
@@ -239,6 +239,11 @@ class exports.IRC extends Server
       @send msg, @message.nick, me
     else
       throw new Error 'You cannot respond to this message.'
+
+
+  notice: (message, user) =>
+    @raw "NOTICE #{user} :#{message}"
+    true
 
   # This is rather tricky version of send, needed because of IRC specifics.
   send: (message, channel, me) =>

@@ -61,6 +61,13 @@ class exports.Server
 
   # Load the configuration file
   constructor: (@serverName, @config) ->
+    # Constants
+    @BOLD = "\x02"
+    @ITALICS = "\x16"
+    @UNDERLINE = "\x1F"
+    @COLOUR = "\x03"
+    @NORMAL = "\x0F"
+
     # Fix bug which causes @channels and @message to be undefined in extended
     # properties
     @channels ?= {}
@@ -108,18 +115,18 @@ class exports.Server
 
   # This is part of interface. It causes to respond to person who started it,
   # either on public channel if it was on public channel, or on PM if it was
-  # PM.
+  # PM. It accepts IRC escape sequences.
   respond: (message, me = false) ->
 
   # This sends message to the channel. Note that on some protocols, public
   # channels are different to PMs. Take care of this while making plugin.
   # If protocol doesn't have concept of channels, throw exception, otherwise
   # return true. If the protocol supports only one channel, ignore channel
-  # value.
+  # value. It accepts IRC escape sequences.
   send: (message, channel, me = false) ->
 
   # This function sends PM to specified user. If protocol doesn't have PMs
-  # throw exception, otherwise return true.
+  # throw exception, otherwise return true. It accepts IRC escape sequences.
   pm: (message, user, me = false) ->
 
   # This command is join channel command. It takes "ID" or "name" as
@@ -144,14 +151,14 @@ class exports.Server
       'write': '<<<'
       'error': '!!!'
 
-    if statuses[status]?
+    if status of statuses
       console.log("[#{@serverName}] #{statuses[status]} #{msg}")
     else
       throw new Error "Unknown status #{status} (log)."
 
   loadPlugins: ->
     channelPlugins = @config.Channels[@message?.channel]?.Plugins
-    for plugin, config of @toObject channelPlugins ? @config.Plugins
+    for plugin, config of @toObject channelPlugins or @config.Plugins
       try
         @plugin = plugin
         @$ = @storage[@plugin] ?= {}
