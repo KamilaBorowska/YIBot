@@ -132,28 +132,20 @@ exports.math = exports.calc = ->
   catch exception
     "Error: #{exception.message}"
 
+  if -0xFFFFFFFF <= value <= 0xFFFFFFFF
+    val = value
+    value += " = 0x#{val.toString(16).toUpperCase().substring 0, 32}"
+    value += " = 0b#{val.toString(2).substring 0, 64}"
   @respond value
-
-exports.rpn = ->
-  expression = infix @message.value
-
-  string = ''
-  for value, i in expression
-    if i isnt 0
-      string += ' '
-    if value.Name?
-      string += value.Name
-    else
-      string += value
-
-  @respond string
 
 infix = (expr) ->
   # Regexp for EcmaScript numbers
   number = ///
     ^              # Beginning of the string
     (?:
-      0x[0-9a-f]   # Hexadecimal numbers
+      0x[0-9a-f]+  # Hexadecimal numbers
+    |
+      0b[01]+      # Binary
     |
       (?:
         \d*        # Any number of digits
@@ -169,11 +161,11 @@ infix = (expr) ->
         \d+        # Digit itself
       )?
     )
-  ///
+  ///i
 
   stack = []
   output = []
-  expr = "#{expr}".toLowerCase()
+  expr = "#{expr}".toLowerCase().replace /\$/g, '0x'
   expectsOp = no
 
   while expr isnt ''
@@ -181,7 +173,10 @@ infix = (expr) ->
     group = if expectsOp then 'Operators' else 'Functions'
     float = if expectsOp then undefined else number.exec(expr)?[0]
     if float
-      output.push +float
+      output.push +if float[1] is 'b' or float[1] is 'B'
+        parseInt float.substring(2), 2
+      else
+        float
       expectsOp = yes
       append = float.length
     else if expr.substr(0, 1) is '('
@@ -217,6 +212,8 @@ infix = (expr) ->
           break
       stack.unshift operator
       append = operator.Name.length
+    if append is 0
+      return "Something is seriously wrong with math!"
     expr = expr.substr append
 
   for operator in stack
