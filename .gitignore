@@ -1,7 +1,5 @@
 # Bot configuration
 config.coffee
-# JSON files
-*.json
 # Compiled JS files
 *.js
 # npm-debug.log
